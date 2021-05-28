@@ -31,16 +31,16 @@ use IEEE.STD_LOGIC_1164.ALL;
 --library UNISIM;
 --use UNISIM.VComponents.all;
 
-entity processor_top is
+entity inverter is
   Port (CLK100MHZ: in std_logic;
         btn_0: in std_logic;
         btn_1: in std_logic;
         led0_g: out std_logic;
         led0_b: out std_logic
         );
-end processor_top;
+end inverter;
 
-architecture Behavioral of processor_top is
+architecture Behavioral of inverter is
 
 component debounce port(
       clk: in std_logic;
