@@ -4,58 +4,67 @@ use IEEE.std_logic_unsigned.all;
 use ieee.numeric_std.all;
 
 
-entity fp_alu is Port (    
-clk: in std_logic;
-operand1: in std_logic_vector(31 downto 0);
-operand2: in std_logic_vector(31 downto 0);
-operator: in std_logic_vector(3 downto 0);
-result: out std_logic_vector(31 downto 0)
-   );
+entity fp_alu is
+port(
+in1,in2:    in std_logic_vector(31 downto 0);
+clk:        in std_logic;sel:in std_logic_vector(1 downto 0);
+output1:    out std_logic_vector(31 downto 0)
+);
 end fp_alu;
 
-architecture Behavioral of fp_alu is
-    constant counterMax : std_logic_vector(7 downto 0):=x"20";
-    constant counterMid : std_logic_vector(7 downto 0):=x"10";
-    signal counter: std_logic_vector(7 downto 0):=counterMid;
-    signal lockCounter: std_logic_vector(3 downto 0):=x"0";
-    signal internal: std_logic:='0';
-    
-    
-    
+
+architecture fp_alu_struct of fp_alu is 
+
+component divider is
+port(
+clk      : in std_logic;
+res      : in std_logic;
+GO       : in std_logic;
+x        : in std_logic_vector(31 downto 0);
+y        : in std_logic_vector(31 downto 0);
+z        : out std_logic_vector(31 downto 0);
+done     : out std_logic;
+overflow : out std_logic);
+end component;
+
+component fpa_seq is
+port(
+n1,n2   :in std_logic_vector(32 downto 0);
+clk     :in std_logic;
+sum     :out std_logic_vector(32 downto 0)
+);
+end component;
+
+component fpm is 
+port(
+in1,in2     :in std_logic_vector(31 downto 0);
+out1        :out std_logic_vector(31 downto 0)
+);
+end component;
+
+signal out_fpa: std_logic_vector(32 downto 0);
+signal out_fpm,out_div: std_logic_vector(31 downto 0);
+signal in1_fpa,in2_fpa: std_logic_vector(32 downto 0);
 
 begin
-process(clk)
-begin
-    if(clk'event and clk='1')then
-        if(lockCounter=x"0")then
-            if(raw='1')then
-                if (counter<counterMax)then
-                    counter <= counter + x"01";
-                else
-                    lockCounter <= lockCounter +x"1";
-                end if;
-            else
-                if(counter>x"00")then
-                    counter <= counter - x"01";
-                else
-                    lockCounter <= lockCounter +x"1";
-                end if;
-            end if;
-        else
-            lockCounter <= lockCounter +x"1";
-        end if;
+
+in1_fpa<=in1&'0';
+in2_fpa<=in2&'0';
+fpa1:fpa_seq port map(in1_fpa,in2_fpa,clk,out_fpa);
+fpm1:fpm port map(in1,in2,out_fpm);
+fpd1:divider port map(clk,'0','1',in1,in2,out_div);
+
+process(sel,clk)
+begin 
+    if(sel="01")
+        then
+        output1<=out_fpa(32 downto 1);
+    elsif(sel="10")
+        then
+        output1<=out_fpm;
+    elsif(sel="11")
+        then
+        output1<=out_div;
     end if;
 end process;
-
-process(counter)
-begin
-    if (counter=counterMax)then
-        internal<='1';
-    elsif (counter=x"00")then
-        internal <='0';
-    end if;
-end process;
-
-debounced<=internal;        
-
-end Behavioral;
+end fp_alu_struct;
