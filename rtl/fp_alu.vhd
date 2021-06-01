@@ -27,38 +27,72 @@ done     : out std_logic;
 overflow : out std_logic);
 end component;
 
-component fpa_seq is
-port(
-n1,n2   :in std_logic_vector(32 downto 0);
-clk     :in std_logic;
-sum     :out std_logic_vector(32 downto 0)
-);
+component FPadd is
+   PORT( 
+      ADD_SUB : IN     std_logic;
+      FP_A    : IN     std_logic_vector (31 DOWNTO 0);
+      FP_B    : IN     std_logic_vector (31 DOWNTO 0);
+      clk     : IN     std_logic;
+      FP_Z    : OUT    std_logic_vector (31 DOWNTO 0)
+   );
 end component;
 
-component fpm is 
-port(
-in1,in2     :in std_logic_vector(31 downto 0);
-out1        :out std_logic_vector(31 downto 0)
-);
+component FPmul is 
+   PORT( 
+      FP_A : IN     std_logic_vector (31 DOWNTO 0);
+      FP_B : IN     std_logic_vector (31 DOWNTO 0);
+      clk  : IN     std_logic;
+      FP_Z : OUT    std_logic_vector (31 DOWNTO 0)
+   );
 end component;
 
-signal out_fpa: std_logic_vector(32 downto 0);
+signal out_fpa: std_logic_vector(31 downto 0);
 signal out_fpm,out_div: std_logic_vector(31 downto 0);
-signal in1_fpa,in2_fpa: std_logic_vector(32 downto 0);
+signal in1_fpa,in2_fpa: std_logic_vector(31 downto 0);
+signal res_rdy: std_logic;
+signal outer_overflow: std_logic;
 
 begin
 
-in1_fpa<=in1&'0';
-in2_fpa<=in2&'0';
-fpa1:fpa_seq port map(in1_fpa,in2_fpa,clk,out_fpa);
-fpm1:fpm port map(in1,in2,out_fpm);
-fpd1:divider port map(clk,'0','1',in1,in2,out_div);
+in1_fpa<=in1;
+in2_fpa<=in2;
+
+
+fpa1:FPadd 
+port map
+(
+     ADD_SUB => '0',
+     FP_A  => in1,
+     FP_B   => in2,
+     clk   => clk,
+     FP_Z => out_fpa
+);
+
+
+fpm1:FPmul PORT MAP 
+(
+     FP_A  => in1,
+     FP_B   => in2,
+     clk   => clk,
+     FP_Z => out_fpm
+);
+
+fpd1:divider port map(
+clk      => clk,
+res      => '0',
+GO       => '1',
+x        => in1,
+y        => in2,
+z        => out_div,
+done     => res_rdy,
+overflow => outer_overflow
+);
 
 process(sel,clk)
 begin 
     if(sel="01")
         then
-        output1<=out_fpa(32 downto 1);
+        output1<=out_fpa(31 downto 0);
     elsif(sel="10")
         then
         output1<=out_fpm;
@@ -68,3 +102,4 @@ begin
     end if;
 end process;
 end fp_alu_struct;
+

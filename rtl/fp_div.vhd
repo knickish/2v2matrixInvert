@@ -100,9 +100,9 @@ process(clk)begin
             when s2 =>  
                 if EA(24) = '1' 
                 then 
-                    0) <= '1';
+                    Q(0) <= '1';
                 else
-                    (0) <= '0';
+                    Q(0) <= '0';
                     EA <= EA + B;
                 end if;
                 SC <= SC -1;
